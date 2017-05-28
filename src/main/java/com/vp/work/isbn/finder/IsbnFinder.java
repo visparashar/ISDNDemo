@@ -34,17 +34,10 @@ public class IsbnFinder {
 				System.out.println("Calling isbn rest service");
 				
 				RestTemplate restTemplate = new RestTemplate();
-			     String uri= IsbnFinder.getServiceUrl(isbn);
-			     
-//			    / RestTemplate restTemplate = new RestTemplate();
+			     String uri= IsbnFinder.getServiceUrl(isbn);			     
 			     String result = restTemplate.getForObject(uri, String.class);
-//			   
-//			     HttpHeaders headers = new HttpHeaders();
-//			    headers.setAccept(Arrays.asList(org.springframework.http.MediaType.APPLICATION_JSON));
-//			    HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
-////			     
-//			    ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.GET, entity, String.class);
-			   return getPublisherName(result);
+			     System.out.println(result);
+			     return getPublisherNameFor_(result);
 //			}
 		}catch(Exception e){
 			e.printStackTrace();
@@ -57,9 +50,10 @@ public class IsbnFinder {
 	
 	private static String getServiceUrl(String isbn)
 	{
-//		System.out.println(Config.ISBNDB_REST_URL+Config.AUTHORIZATION_KEY+File.separator+Config.SERVICE_TYPE_KEY+File.separator+isbn);
-		return Config.ISBNDB_REST_URL+Config.AUTHORIZATION_KEY+"/"+Config.SERVICE_TYPE_KEY+"/"+isbn;
+//		return Config.ISBNDB_REST_URL+Config.AUTHORIZATION_KEY+"/"+Config.SERVICE_TYPE_KEY+"/"+isbn;
+		return Config.ISBNDB_REST_URL+isbn;
 	}
+	
 	private static HashMap<String,String> getPublisherName(String json) throws ParseException{
 		
 		JSONParser parser = new JSONParser();
@@ -94,7 +88,42 @@ public class IsbnFinder {
 				
 		}
 		return null;
+			
+	}
+
+	
+	private static HashMap<String,String> getPublisherNameFor_(String json) throws ParseException{
 		
+		JSONParser parser = new JSONParser();	
+		String temp ="var _OLBookInfo =";
+		json=json.replaceAll(temp, "");
+		json=json.replaceAll(";","");
+		
+		Map object  = (HashMap)parser.parse(json);
+		
+		if(object.isEmpty()){
+			Map map = new HashMap<String,String>();
+			map.put(STATUS_KEY, false);
+			map.put(DATA, "Book is not present on Public Domain");
+			return (HashMap<String, String>) map;
+			
+		}else{
+			Map map = new HashMap<String,String>();
+			map.put(STATUS_KEY, true);
+			map.put(DATA, "Book is present on Public Domain https://archive.org" );
+			return (HashMap<String, String>) map;
+		}
 		
 	}
+	
+	
+	
+	
 }
+		
+		
+		
+		
+		
+	
+
