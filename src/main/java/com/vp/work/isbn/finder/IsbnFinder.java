@@ -37,7 +37,7 @@ public class IsbnFinder {
 			     String uri= IsbnFinder.getServiceUrl(isbn);			     
 			     String result = restTemplate.getForObject(uri, String.class);
 			     System.out.println(result);
-			     return getPublisherNameFor_(result);
+			     return getPublisherNameFor_(result ,isbn);
 //			}
 		}catch(Exception e){
 			e.printStackTrace();
@@ -72,6 +72,7 @@ public class IsbnFinder {
 //					return true;
 					List<Map> dataSet =(List<Map>)object.get("data");
 					for(Map<String,String> eachData: dataSet){
+						
 						Map map = new HashMap<String,String>();
 						map.put(STATUS_KEY, true);
 						map.put(DATA, "PUBLISHER_NAME:"+eachData.get("publisher_name")+ " AND BOOK TITLE:"+eachData.get("title_long")+" hence is present on public link");
@@ -92,7 +93,7 @@ public class IsbnFinder {
 	}
 
 	
-	private static HashMap<String,String> getPublisherNameFor_(String json) throws ParseException{
+	private static HashMap<String,String> getPublisherNameFor_(String json,String isbn) throws ParseException{
 		
 		JSONParser parser = new JSONParser();	
 		String temp ="var _OLBookInfo =";
@@ -108,10 +109,20 @@ public class IsbnFinder {
 			return (HashMap<String, String>) map;
 			
 		}else{
-			Map map = new HashMap<String,String>();
-			map.put(STATUS_KEY, true);
-			map.put(DATA, "Book is present on Public Domain https://archive.org" );
-			return (HashMap<String, String>) map;
+			HashMap dataSet =(HashMap)object.get("ISBN:"+isbn);
+			if(dataSet.get("preview").toString().equalsIgnoreCase("borrow")){
+				Map map = new HashMap<String,String>();
+				map.put(STATUS_KEY, true);
+				map.put(DATA, "Book is present on Public Domain https://archive.org" );
+				return (HashMap<String, String>) map;
+				
+			}else{
+				Map map = new HashMap<String,String>();
+				map.put(STATUS_KEY, false);
+				map.put(DATA, "Book is not present on Public Domain");
+				return (HashMap<String, String>) map;
+			
+			}
 		}
 		
 	}
