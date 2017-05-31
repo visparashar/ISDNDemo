@@ -17,10 +17,8 @@ public class IsbnFinder {
 	
 	private static final String STATUS_KEY="Status";
 	private static final String DATA="Data";
-	
-	
-	
-	
+	private static final String _OPENLIBRARY="openlibrary";
+	private static final String _GOOGLEBOOKS="googlebooks";
 	
 	public HashMap<String,String> isPresentOnPublicLink(String isbn){
 		
@@ -28,30 +26,60 @@ public class IsbnFinder {
 			if(null==isbn){
 				return null;
 			}
-//			if(isbn.length()==10 || isbn.length()==13){
 			isbn=isbn.replaceAll("-", "");
 			System.out.println(isbn);
-				System.out.println("Calling isbn rest service");
-				
-				RestTemplate restTemplate = new RestTemplate();
-			     String uri= IsbnFinder.getServiceUrl(isbn);			     
-			     String result = restTemplate.getForObject(uri, String.class);
-			     System.out.println(result);
-			     return getPublisherNameFor_(result ,isbn);
-//			}
+				System.out.println("Calling isbn rest service");					
+			     String uri= IsbnFinder.getServiceUrl(isbn,_OPENLIBRARY);
+			     String result =callRest(uri);
+			     if(result!=null && result.length()>0 && !result.equalsIgnoreCase("var _OLBookInfo = {};")){
+			    	 HashMap response = getPublisherNameFor_(result ,isbn);
+			    	 
+			    	 if(response.get(STATUS_KEY).toString().equals("false"))
+			    	 {
+			    		 String googleBookResult=  callRest(IsbnFinder.getServiceUrl(isbn,_GOOGLEBOOKS));
+					    	return getPublicherFor_GoogleBook(googleBookResult,isbn);
+			    	 }else{
+			    		 return response;
+			    	 }
+			    	 
+			     }else{
+			    	String googleBookResult=  callRest(IsbnFinder.getServiceUrl(isbn,_GOOGLEBOOKS));
+			    	return getPublicherFor_GoogleBook(googleBookResult,isbn);
+			     }
+			    
 		}catch(Exception e){
 			e.printStackTrace();
 			return null;
 		}
-		
-		
-		
 	}
 	
-	private static String getServiceUrl(String isbn)
+	private static String callRest(String url){
+		try{
+			
+		RestTemplate restTemplate = new RestTemplate();
+		
+		String result = restTemplate.getForObject(url, String.class);
+		return result;
+	}catch(Exception e)
+		{
+		
+			return null;
+		}
+	}
+	
+	private static String getServiceUrl(String isbn,String diffCase)
 	{
-//		return Config.ISBNDB_REST_URL+Config.AUTHORIZATION_KEY+"/"+Config.SERVICE_TYPE_KEY+"/"+isbn;
-		return Config.ISBNDB_REST_URL+isbn;
+		
+		switch(diffCase)
+		{
+		case _OPENLIBRARY:
+			 return Config.ISBNDB_REST_URL+isbn;
+		case _GOOGLEBOOKS:
+			return Config._GOOGLEBOOK_REST_URL+isbn;
+			
+		}
+		return null;
+	
 	}
 	
 	private static HashMap<String,String> getPublisherName(String json) throws ParseException{
@@ -124,6 +152,49 @@ public class IsbnFinder {
 			
 			}
 		}
+		
+	}
+	
+	private static HashMap<String,String> getPublicherFor_GoogleBook(String json,String isbn) throws ParseException{
+		JSONParser parser = new JSONParser();	
+		Map response =(HashMap)parser.parse(json);
+		if(response.get("totalItems").toString().equals("0")){
+			Map map = new HashMap<String,String>();
+			map.put(STATUS_KEY, false);
+			map.put(DATA, "Book is not present on Public Domain");
+			return (HashMap<String, String>) map;			
+		}else{
+			List items = (ArrayList)response.get("items");
+			Map item =(HashMap)items.get(0);
+			if(item!=null && item.containsKey("accessInfo")){
+				Map accessMap = (HashMap) item.get("accessInfo");
+						if(Boolean.getBoolean(accessMap.get("publicDomain").toString()))
+						{
+							Map pdf =(HashMap)accessMap.get("pdf");
+							if(Boolean.getBoolean(pdf.get("isAvailable").toString())){
+								Map map = new HashMap<String,String>();
+								map.put(STATUS_KEY, true);
+								map.put(DATA, "Book is  present on Public Domain-https://www.googleapis.com");
+								return (HashMap<String, String>) map;
+							}else{
+								Map map = new HashMap<String,String>();
+								map.put(STATUS_KEY, false);
+								map.put(DATA, "Book is not present on Public Domain");
+								return (HashMap<String, String>) map;	
+							}
+								
+							
+						}else{
+							Map map = new HashMap<String,String>();
+							map.put(STATUS_KEY, false);
+							map.put(DATA, "Book is not present on Public Domain");
+							return (HashMap<String, String>) map;	
+						}
+			}
+				
+			
+		}
+		return null;
 		
 	}
 	

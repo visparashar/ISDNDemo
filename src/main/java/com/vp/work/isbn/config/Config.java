@@ -9,7 +9,7 @@ public class Config {
 //	public static final String SERVICE_TYPE_KEY="book";
 	
 	
-	
+	public static final String _GOOGLEBOOK_REST_URL="https://www.googleapis.com/books/v1/volumes?q=isbn:";
 	
 	
 	
