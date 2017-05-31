@@ -21,12 +21,15 @@ public class Controller {
 	{
 		
 	   IsbnFinder find = new IsbnFinder();
-	   HashMap response =find.isPresentOnPublicLink(id);
-	  if(response!=null){
-		  return response;
+	   boolean response =find.isPresentOnPublicLink(id);
+	  if(response){
+		  Map<String,String> map = new HashMap();
+		  map.put("Data", "Book is present on Public Link");
+		   map.put("Status", "true");
+		   return (HashMap) map;
 	  }else{
 		  Map<String,String> map = new HashMap();
-		   map.put("Data", "Some Exception Occured");
+		   map.put("Data", "Book is not present on Public Link");
 		   map.put("Status", "false");
 		   return (HashMap) map;
 		  
